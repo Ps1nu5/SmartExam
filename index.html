@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartExam - Анализ результатов экзаменов</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Шапка сайта -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">
+                        <h1>SmartExam</h1>
+                        <span>Платформа анализа экзаменов</span>
+                    </div>
+                    <nav class="nav">
+                        <ul class="nav-list">
+                            <li><a href="#dashboard" class="nav-link" data-page="dashboard">Главная</a></li>
+                            <li><a href="#classes" class="nav-link" data-page="classes">Классы</a></li>
+                            <li><a href="#exams" class="nav-link" data-page="exams">Экзамены</a></li>
+                            <li><a href="#analytics" class="nav-link" data-page="analytics">Аналитика</a></li>
+                        </ul>
+                    </nav>
+                    <div class="user-menu">
+                        <button id="loginBtn" class="btn btn-primary">Войти</button>
+                        <div id="userInfo" class="user-info" style="display: none;">
+                            <span id="userName"></span>
+                            <button id="logoutBtn" class="btn btn-secondary">Выход</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main">
+            <div class="container">
+                <!-- Страница входа/регистрации -->
+                <div id="authPage" class="page active">
+                    <div class="auth-container">
+                        <div class="auth-card">
+                            <h2>Вход в систему</h2>
+                            <form id="loginForm">
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="password">Пароль</label>
+                                    <input type="password" id="password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-full">Войти</button>
+                            </form>
+                            <p class="auth-switch">
+                                Нет аккаунта? <a href="#" id="showRegister">Зарегистрироваться</a>
+                            </p>
+                        </div>
+
+                        <div class="auth-card" id="registerCard" style="display: none;">
+                            <h2>Регистрация</h2>
+                            <form id="registerForm">
+                                <div class="form-group">
+                                    <label for="regName">Имя</label>
+                                    <input type="text" id="regName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regEmail">Email</label>
+                                    <input type="email" id="regEmail" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regPassword">Пароль</label>
+                                    <input type="password" id="regPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="regConfirmPassword">Подтвердите пароль</label>
+                                    <input type="password" id="regConfirmPassword" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-full">Зарегистрироваться</button>
+                            </form>
+                            <p class="auth-switch">
+                                Уже есть аккаунт? <a href="#" id="showLogin">Войти</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Панель управления -->
+                <div id="dashboardPage" class="page">
+                    <div class="dashboard-header">
+                        <h2>Панель управления</h2>
+                        <p>Добро пожаловать в SmartExam!</p>
+                    </div>
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalClasses">0</div>
+                            <div class="stat-label">Классов</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalStudents">0</div>
+                            <div class="stat-label">Учеников</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalExams">0</div>
+                            <div class="stat-label">Экзаменов</div>
+                        </div>
+                    </div>
+                    <div class="dashboard-actions">
+                        <button class="btn btn-primary" onclick="showPage('classes')">Управление классами</button>
+                        <button class="btn btn-secondary" onclick="showPage('exams')">Добавить экзамен</button>
+                        <button class="btn btn-info" onclick="showPage('analytics')">Посмотреть аналитику</button>
+                    </div>
+                </div>
+
+                <!-- Управление классами -->
+                <div id="classesPage" class="page">
+                    <div class="page-header">
+                        <h2>Управление классами</h2>
+                        <button class="btn btn-primary" id="addClassBtn">Добавить класс</button>
+                    </div>
+                    <div id="classesList" class="classes-list">
+                        <!-- Классы будут добавлены динамически -->
+                    </div>
+                </div>
+
+                <!-- Экзамены -->
+                <div id="examsPage" class="page">
+                    <div class="page-header">
+                        <h2>Результаты экзаменов</h2>
+                        <button class="btn btn-primary" id="addExamBtn">Добавить экзамен</button>
+                    </div>
+                    <div id="examsList" class="exams-list">
+                        <!-- Экзамены будут добавлены динамически -->
+                    </div>
+                </div>
+
+                <!-- Аналитика -->
+                <div id="analyticsPage" class="page">
+                    <div class="page-header">
+                        <h2>Аналитика результатов</h2>
+                        <select id="analyticsClassSelect" class="form-control">
+                            <option value="">Выберите класс</option>
+                        </select>
+                        <select id="analyticsExamSelect" class="form-control">
+                            <option value="">Выберите экзамен</option>
+                        </select>
+                    </div>
+                    <div id="analyticsContent" class="analytics-content">
+                        <!-- Аналитика будет добавлена динамически -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Модальные окна -->
+        <div id="modalOverlay" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Заголовок</h3>
+                    <button class="modal-close" id="modalClose">&times;</button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Содержимое модального окна -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    
+</body>
+</html>
