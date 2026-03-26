@@ -13,20 +13,41 @@ class AuthSystem {
 
     // Проверка существующей сессии
     async checkExistingSession() {
+        console.log('checkExistingSession called');
         const sessionData = localStorage.getItem('authSession');
+        console.log('Session data:', sessionData);
+        
         if (sessionData) {
             try {
                 const session = JSON.parse(sessionData);
-                if (session.expiresAt > Date.now()) {
-                    this.currentUser = session.user;
+                console.log('Parsed session:', session);
+                
+                // Правильное сравнение времени
+                const expiresAt = new Date(session.expiresAt).getTime();
+                const now = Date.now();
+                console.log('Time check:', { expiresAt, now, isValid: expiresAt > now });
+                
+                if (expiresAt > now) {
+                    console.log('Session is valid, restoring user');
+                    // Восстанавливаем пользователя из сессии
+                    this.currentUser = {
+                        id: session.userId,
+                        email: session.email,
+                        name: session.userName || session.email
+                    };
+                    console.log('User restored:', this.currentUser);
                     this.updateUI();
                     return true;
                 } else {
+                    console.log('Session expired');
                     localStorage.removeItem('authSession');
                 }
             } catch (error) {
+                console.error('Session parse error:', error);
                 localStorage.removeItem('authSession');
             }
+        } else {
+            console.log('No session data found');
         }
         return false;
     }
@@ -102,6 +123,7 @@ class AuthSystem {
             localStorage.setItem('authSession', JSON.stringify({
                 userId: user.id,
                 email: user.email,
+                userName: user.name,
                 loginTime: new Date().toISOString(),
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 дней
             }));

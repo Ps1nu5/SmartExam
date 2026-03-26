@@ -107,14 +107,6 @@ const MATH_TASKS = {
 
 // Простая инициализация для мобильных
 function simpleInit() {
-    // Показываем страницу входа если нужно
-    const loginPage = document.getElementById('loginPage');
-    if (loginPage && window.authSystem && window.authSystem.isAuthenticated()) {
-        showDashboard();
-    } else if (loginPage) {
-        loginPage.style.display = 'block';
-    }
-    
     // Настраиваем простые обработчики
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn && !loginBtn.onclick) {
@@ -171,10 +163,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function checkAuthStatus() {
+    console.log('checkAuthStatus called', {
+        hasAuthSystem: !!window.authSystem,
+        isAuthenticated: window.authSystem ? window.authSystem.isAuthenticated() : 'no authSystem',
+        currentUser: window.authSystem ? window.authSystem.currentUser : null
+    });
+    
     // Проверяем авторизацию сразу без задержки
     if (window.authSystem && window.authSystem.isAuthenticated()) {
+        console.log('User is authenticated, showing dashboard');
         showDashboard();
     } else {
+        console.log('User not authenticated, showing login page');
         // Показываем страницу входа только если не авторизованы
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
