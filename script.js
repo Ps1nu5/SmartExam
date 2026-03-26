@@ -879,7 +879,7 @@ function updateExamsList() {
             <div class="card-actions">
                 <button class="btn btn-primary" onclick="showExamResults('${exam.id}')">Результаты</button>
                 <button class="btn btn-info" onclick="showExamAnalytics('${exam.id}')">Аналитика</button>
-                <button class="btn btn-secondary" onclick="deleteExam('${exam.id}')">Удалить</button>
+                <button class="btn btn-danger" onclick="deleteExam('${exam.id}')">Удалить</button>
             </div>
         </div>
     `).join('');

@@ -267,6 +267,23 @@ textarea.form-control {
     box-shadow: 0 0 0 4px rgba(108, 117, 125, 0.3), 0 4px 15px rgba(108, 117, 125, 0.4);
 }
 
+.btn-danger {
+    color: #ffffff;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.5);
+}
+
+.btn-danger:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.3), 0 4px 15px rgba(220, 53, 69, 0.4);
+}
+
 .btn-info {
     color: #fff;
     background-color: #17a2b8;
@@ -386,6 +403,7 @@ textarea.form-control {
 .classes-list,
 .exams-list {
     display: grid;
+    grid-template-columns: 1fr;
     gap: 1rem;
 }
 
@@ -648,6 +666,10 @@ textarea.form-control {
         text-align: center;
     }
     
+    .container {
+        padding: 0 15px;
+    }
+    
     .dashboard-stats {
         grid-template-columns: 1fr;
     }
@@ -667,16 +689,52 @@ textarea.form-control {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+        padding: 1rem;
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .card-actions {
         width: 100%;
         justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .card-actions .btn {
+        flex: 1;
+        min-width: 100px;
+        font-size: 0.85rem;
+        padding: 0.6rem 0.8rem;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .card-actions .btn-primary {
+        color: #ffffff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .card-actions .btn-secondary {
+        color: #ffffff;
+        background: linear-gradient(135deg, #4a5568 0%, #6c757d 100%);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+    }
+
+    .card-actions .btn-danger {
+        color: #ffffff;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
     }
     
     .modal {
         width: 95%;
         max-width: none;
+        margin: 0 10px;
     }
     
     .exam-table th,
@@ -702,12 +760,24 @@ textarea.form-control {
         padding: 0 10px;
     }
     
-    .auth-card {
-        padding: 1.5rem;
+    .class-card,
+    .exam-card {
+        padding: 0.8rem;
     }
     
-    .btn {
-        padding: 0.6rem 1.2rem;
+    .card-actions .btn {
+        min-width: 90px;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.6rem;
+    }
+    
+    .class-name,
+    .exam-name {
+        font-size: 1.1rem;
+    }
+    
+    .class-students,
+    .exam-date {
         font-size: 0.9rem;
     }
     
