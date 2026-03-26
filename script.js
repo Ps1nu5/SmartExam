@@ -148,6 +148,15 @@ function updateDebugInfo(message) {
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
+    // Простая проверка что JS работает
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) {
+        loginBtn.style.background = 'red';
+        setTimeout(() => {
+            loginBtn.style.background = '';
+        }, 1000);
+    }
+    
     updateDebugInfo('DOM loaded, starting initialization...');
     
     // Проверяем загрузку всех необходимых скриптов
@@ -159,8 +168,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             if (!window.authSystem) {
                 updateDebugInfo('ERROR: AuthSystem failed to load!');
-                // Показываем ошибку пользователю
-                document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h1>Ошибка загрузки</h1><p>Не удалось загрузить систему аутентификации. Пожалуйста, обновите страницу.</p></div>';
                 return;
             }
         }, 2000);
@@ -177,7 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateDebugInfo('Initializing AuthSystem with Firebase...');
                     window.authSystem.init(window.firebaseSync).then(() => {
                         updateDebugInfo('AuthSystem initialized with Firebase');
-                        // После инициализации проверяем авторизацию
                         checkAuthStatus();
                     }).catch(error => {
                         updateDebugInfo(`AuthSystem init error: ${error.message}`);
@@ -190,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateDebugInfo('Initializing AuthSystem without Firebase...');
                     window.authSystem.init(null).then(() => {
                         updateDebugInfo('AuthSystem initialized without Firebase');
-                        // После инициализации проверяем авторизацию
                         checkAuthStatus();
                     }).catch(error => {
                         updateDebugInfo(`AuthSystem init error: ${error.message}`);
@@ -200,7 +205,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }).catch(error => {
             updateDebugInfo(`Firebase init error: ${error.message}`);
-            // Пробуем инициализировать без Firebase
             if (window.authSystem) {
                 window.authSystem.init(null).then(() => {
                     checkAuthStatus();
@@ -209,11 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } else {
         updateDebugInfo('Firebase not available, initializing without it...');
-        // Инициализация системы аутентификации без Firebase
         if (window.authSystem) {
             window.authSystem.init(null).then(() => {
                 updateDebugInfo('AuthSystem initialized without Firebase');
-                // После инициализации проверяем авторизацию
                 checkAuthStatus();
             }).catch(error => {
                 updateDebugInfo(`AuthSystem init error: ${error.message}`);
