@@ -110,7 +110,156 @@ document.addEventListener('DOMContentLoaded', function() {
     loadData();
     setupEventListeners();
     updateUI();
+    
+    // Инициализация Firebase
+    if (window.firebaseSync) {
+        window.firebaseSync.init().then(success => {
+            if (success) {
+                console.log('Firebase синхронизация активна');
+                updateSyncStatus();
+            } else {
+                console.log('Работаем в офлайн-режиме');
+            }
+        });
+    }
 });
+
+// Функции управления синхронизацией
+function showSyncStatus() {
+    if (!window.firebaseSync) {
+        showModal('Синхронизация', `
+            <div style="padding: 1rem;">
+                <p>🔌 Firebase SDK не загружен</p>
+                <p>Добавьте Firebase SDK в index.html</p>
+                <p>Следуйте инструкции в файле FIREBASE_SETUP.md</p>
+            </div>
+        `);
+        return;
+    }
+
+    const status = window.firebaseSync.getSyncStatus();
+    const statusHtml = `
+        <div style="padding: 1rem;">
+            <div style="margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <strong>📊 Статус синхронизации:</strong><br>
+                🌐 Сеть: ${status.isOnline ? '✅ Онлайн' : '❌ Офлайн'}<br>
+                🔥 Firebase: ${status.hasFirebase ? '✅ Подключено' : '❌ Не подключено'}<br>
+                🔄 Последняя синхронизация: ${status.lastSync ? new Date(status.lastSync).toLocaleString() : 'Ещё не было'}<br>
+                ⏳ Процесс: ${status.syncInProgress ? '✅ Синхронизация...' : '✅ Ожидание'}
+            </div>
+            <div style="margin-top: 1rem;">
+                <button class="btn btn-secondary" onclick="forceSync()" style="margin-right: 0.5rem;">
+                    🔄 Принудительно синхронизировать
+                </button>
+                <button class="btn btn-primary" onclick="loadFromFirebase()" style="margin-right: 0.5rem;">
+                    ☁️ Загрузить из облака
+                </button>
+                <button class="btn btn-info" onclick="clearFirebaseData()">
+                    🗑️ Очистить облако
+                </button>
+            </div>
+        </div>
+    `;
+    
+    showModal('Синхронизация данных', statusHtml);
+}
+
+async function forceSync() {
+    if (!window.firebaseSync) {
+        showModal('Ошибка', 'Firebase не инициализирован. Добавьте SDK в index.html');
+        return;
+    }
+
+    showModal('Синхронизация', `
+        <div style="padding: 1rem; text-align: center;">
+            <div style="margin-bottom: 1rem;">🔄 Синхронизация данных...</div>
+            <div style="color: #666;">Пожалуйста, подождите...</div>
+        </div>
+    `);
+
+    const success = await window.firebaseSync.forceSync();
+    
+    setTimeout(() => {
+        closeModal();
+        if (success) {
+            showModal('✅ Успешно', `
+                <div style="padding: 1rem; text-align: center;">
+                    <div style="color: #28a745; font-size: 1.2rem; margin-bottom: 1rem;">✅</div>
+                    <div>Данные успешно синхронизированы с Firebase</div>
+                </div>
+            `);
+        } else {
+            showModal('❌ Ошибка', `
+                <div style="padding: 1rem; text-align: center;">
+                    <div style="color: #dc3545; font-size: 1.2rem; margin-bottom: 1rem;">❌</div>
+                    <div>Не удалось синхронизировать данные. Проверьте подключение к интернету.</div>
+                </div>
+            `);
+        }
+    }, 1000);
+}
+
+async function loadFromFirebase() {
+    if (!window.firebaseSync) {
+        showModal('Ошибка', 'Firebase не инициализирован');
+        return;
+    }
+
+    showModal('Загрузка', `
+        <div style="padding: 1rem; text-align: center;">
+            <div style="margin-bottom: 1rem;">☁️ Загрузка данных из Firebase...</div>
+            <div style="color: #666;">Пожалуйста, подождите...</div>
+        </div>
+    `);
+
+    const data = await window.firebaseSync.loadFromFirebase();
+    
+    setTimeout(() => {
+        closeModal();
+        if (data) {
+            // Обновляем глобальные переменные
+            if (data.users) window.users = data.users;
+            if (data.classes) window.classes = data.classes;
+            if (data.exams) window.exams = data.exams;
+            
+            updateUI();
+            showModal('✅ Успешно', `
+                <div style="padding: 1rem; text-align: center;">
+                    <div style="color: #28a745; font-size: 1.2rem; margin-bottom: 1rem;">✅</div>
+                    <div>Данные успешно загружены из Firebase</div>
+                    <div style="margin-top: 0.5rem; color: #666;">Интерфейс будет обновлен...</div>
+                </div>
+            `);
+        } else {
+            showModal('❌ Нет данных', `
+                <div style="padding: 1rem; text-align: center;">
+                    <div style="color: #ffc107; font-size: 1.2rem; margin-bottom: 1rem;">📭</div>
+                    <div>В Firebase нет данных для загрузки</div>
+                    <div style="margin-top: 0.5rem; color: #666;">Сначала создайте данные локально</div>
+                </div>
+            `);
+        }
+    }, 1000);
+}
+
+async function clearFirebaseData() {
+    if (!window.firebaseSync) {
+        showModal('Ошибка', 'Firebase не инициализирован');
+        return;
+    }
+
+    if (!confirm('Вы уверены, что хотите удалить все данные из Firebase?')) {
+        return;
+    }
+
+    await window.firebaseSync.clearFirebaseData();
+    showModal('✅ Готово', `
+        <div style="padding: 1rem; text-align: center;">
+            <div style="color: #28a745; font-size: 1.2rem; margin-bottom: 1rem;">🗑️</div>
+            <div>Данные в Firebase успешно удалены</div>
+        </div>
+    `);
+}
 
 // Настройка обработчиков событий
 function setupEventListeners() {
@@ -148,37 +297,53 @@ function setupEventListeners() {
     document.getElementById('analyticsExamSelect').addEventListener('change', updateAnalytics);
 }
 
-// Загрузка данных из localStorage
-function loadData() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-    }
-
-    const savedClasses = localStorage.getItem('classes');
-    if (savedClasses) {
-        classes = JSON.parse(savedClasses);
-    }
-
-    const savedExams = localStorage.getItem('exams');
-    if (savedExams) {
-        exams = JSON.parse(savedExams);
-    }
-
-    const savedStudents = localStorage.getItem('students');
-    if (savedStudents) {
-        students = JSON.parse(savedStudents);
+// Функции сохранения и загрузки данных с синхронизацией
+async function saveData() {
+    try {
+        // Сохраняем в localStorage
+        localStorage.setItem('smartExamData', JSON.stringify({
+            users: users,
+            classes: classes,
+            exams: exams
+        }));
+        
+        // Синхронизируем с Firebase
+        if (window.firebaseSync) {
+            await window.firebaseSync.syncToFirebase();
+        }
+    } catch (error) {
+        console.error('Ошибка сохранения данных:', error);
     }
 }
 
-// Сохранение данных в localStorage
-function saveData() {
-    if (currentUser) {
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+async function loadData() {
+    try {
+        // Сначала пробуем загрузить из Firebase
+        if (window.firebaseSync && navigator.onLine) {
+            const firebaseData = await window.firebaseSync.loadFromFirebase();
+            if (firebaseData) {
+                const { users, classes, exams } = firebaseData;
+                window.users = users || [];
+                window.classes = classes || [];
+                window.exams = exams || [];
+                return;
+            }
+        }
+        
+        // Загружаем из localStorage
+        const data = localStorage.getItem('smartExamData');
+        if (data) {
+            const parsedData = JSON.parse(data);
+            window.users = parsedData.users || [];
+            window.classes = parsedData.classes || [];
+            window.exams = parsedData.exams || [];
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+        window.users = [];
+        window.classes = [];
+        window.exams = [];
     }
-    localStorage.setItem('classes', JSON.stringify(classes));
-    localStorage.setItem('exams', JSON.stringify(exams));
-    localStorage.setItem('students', JSON.stringify(students));
 }
 
 // Обновление интерфейса

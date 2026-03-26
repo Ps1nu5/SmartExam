@@ -6,6 +6,14 @@
     <title>SmartExam - Анализ результатов экзаменов</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+<!-- Конфигурация Firebase -->
+<script src="firebase-config.js"></script>
+<script src="firebase-sync.js"></script>
+
 </head>
 <body>
     <div id="app">
@@ -107,6 +115,14 @@
                             <div class="stat-number" id="totalExams">0</div>
                             <div class="stat-label">Экзаменов</div>
                         </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="showSyncStatus()">
+                            🔄 Статус синхронизации
+                        </button>
+                        <button class="btn btn-primary" onclick="forceSync()">
+                            ☁️ Синхронизировать
+                        </button>
                     </div>
                     <div class="dashboard-actions">
                         <button class="btn btn-primary" onclick="showPage('classes')">Управление классами</button>
