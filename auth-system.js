@@ -8,11 +8,11 @@ class AuthSystem {
     // Инициализация
     init(firebaseSync) {
         this.firebaseSync = firebaseSync;
-        this.checkExistingSession();
+        return this.checkExistingSession();
     }
 
     // Проверка существующей сессии
-    checkExistingSession() {
+    async checkExistingSession() {
         const sessionData = localStorage.getItem('authSession');
         if (sessionData) {
             try {

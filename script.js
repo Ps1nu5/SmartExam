@@ -113,43 +113,44 @@ document.addEventListener('DOMContentLoaded', function() {
             if (success) {
                 // Инициализация системы аутентификации
                 if (window.authSystem) {
-                    window.authSystem.init(window.firebaseSync);
+                    window.authSystem.init(window.firebaseSync).then(() => {
+                        // После инициализации проверяем авторизацию
+                        checkAuthStatus();
+                    });
                 }
             } else {
                 // Инициализация системы аутентификации без Firebase
                 if (window.authSystem) {
-                    window.authSystem.init(null);
+                    window.authSystem.init(null).then(() => {
+                        // После инициализации проверяем авторизацию
+                        checkAuthStatus();
+                    });
                 }
             }
-            
-            // Проверяем авторизацию
-            checkAuthStatus();
         });
     } else {
         // Инициализация системы аутентификации без Firebase
         if (window.authSystem) {
-            window.authSystem.init(null);
+            window.authSystem.init(null).then(() => {
+                // После инициализации проверяем авторизацию
+                checkAuthStatus();
+            });
         }
-        
-        // Проверяем авторизацию
-        checkAuthStatus();
     }
 });
 
 function checkAuthStatus() {
-    // console.log - отключен для продакшена('Проверка статуса авторизации...');
-    
-    // Ждем загрузки DOM
-    setTimeout(() => {
-        // Проверяем авторизацию
-        if (window.authSystem && window.authSystem.isAuthenticated()) {
-            // console.log - отключен для продакшена('Пользователь авторизован, показываем дашборд...');
-            showDashboard();
-        } else {
-            // console.log - отключен для продакшена('Пользователь не авторизован, настраиваем формы...');
-            setupAuthListeners();
+    // Проверяем авторизацию сразу без задержки
+    if (window.authSystem && window.authSystem.isAuthenticated()) {
+        showDashboard();
+    } else {
+        // Показываем страницу входа только если не авторизованы
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.style.display = 'block';
         }
-    }, 100);
+        setupAuthListeners();
+    }
 }
 
 function showDashboard() {
