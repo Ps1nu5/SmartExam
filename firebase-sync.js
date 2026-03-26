@@ -115,11 +115,42 @@ class FirebaseSync {
     getUserId() {
         let userId = localStorage.getItem('smartExamUserId');
         if (!userId) {
-            // Генерируем уникальный ID
-            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            // Используем фиксированный ID для синхронизации между устройствами
+            // Можно изменить на любой уникальный ID
+            userId = 'smartexam_user_main';
             localStorage.setItem('smartExamUserId', userId);
         }
         return userId;
+    }
+
+    // Смена ID пользователя (для разных пользователей)
+    changeUserId(newUserId) {
+        if (!newUserId) {
+            newUserId = prompt('Введите ваш ID пользователя (например: ivanov_2024):');
+            if (!newUserId) return false;
+        }
+        
+        // Очищаем старые данные
+        this.clearFirebaseData();
+        
+        // Устанавливаем новый ID
+        const userId = 'smartexam_' + newUserId;
+        localStorage.setItem('smartExamUserId', userId);
+        
+        // Очищаем локальные данные
+        localStorage.removeItem('smartExamData');
+        
+        this.showSyncNotification(`Сменен ID пользователя на: ${newUserId}`);
+        return true;
+    }
+
+    // Получение текущего имени пользователя
+    getCurrentUserName() {
+        const userId = localStorage.getItem('smartExamUserId');
+        if (userId) {
+            return userId.replace('smartexam_', '').replace('smartexam_user_', '');
+        }
+        return 'неизвестно';
     }
 
     // Показ уведомлений

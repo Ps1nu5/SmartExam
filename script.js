@@ -138,10 +138,12 @@ function showSyncStatus() {
     }
 
     const status = window.firebaseSync.getSyncStatus();
+    const currentUserName = window.firebaseSync.getCurrentUserName();
     const statusHtml = `
         <div style="padding: 1rem;">
             <div style="margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
                 <strong>📊 Статус синхронизации:</strong><br>
+                👤 Пользователь: <strong>${currentUserName}</strong><br>
                 🌐 Сеть: ${status.isOnline ? '✅ Онлайн' : '❌ Офлайн'}<br>
                 🔥 Firebase: ${status.hasFirebase ? '✅ Подключено' : '❌ Не подключено'}<br>
                 🔄 Последняя синхронизация: ${status.lastSync ? new Date(status.lastSync).toLocaleString() : 'Ещё не было'}<br>
@@ -154,9 +156,15 @@ function showSyncStatus() {
                 <button class="btn btn-primary" onclick="loadFromFirebase()" style="margin-right: 0.5rem;">
                     ☁️ Загрузить из облака
                 </button>
-                <button class="btn btn-info" onclick="clearFirebaseData()">
+                <button class="btn btn-info" onclick="changeUser()" style="margin-right: 0.5rem;">
+                    👤 Сменить пользователя
+                </button>
+                <button class="btn btn-warning" onclick="clearFirebaseData()">
                     🗑️ Очистить облако
                 </button>
+            </div>
+            <div style="margin-top: 1rem; padding: 0.75rem; background: #fff3cd; border-radius: 5px; font-size: 0.9rem;">
+                <strong>ℹ️ Важно:</strong> Для синхронизации между устройствами используйте одинаковый ID пользователя на всех устройствах.
             </div>
         </div>
     `;
@@ -259,6 +267,50 @@ async function clearFirebaseData() {
             <div>Данные в Firebase успешно удалены</div>
         </div>
     `);
+}
+
+function changeUser() {
+    if (!window.firebaseSync) {
+        showModal('Ошибка', 'Firebase не инициализирован');
+        return;
+    }
+
+    const currentUserName = window.firebaseSync.getCurrentUserName();
+    const modalBody = `
+        <div style="padding: 1rem;">
+            <p><strong>Текущий пользователь:</strong> ${currentUserName}</p>
+            <p style="margin-bottom: 1rem;">Введите новый ID пользователя для синхронизации данных:</p>
+            <form id="changeUserForm">
+                <div class="form-group">
+                    <label for="newUserId">ID пользователя (например: ivanov_2024)</label>
+                    <input type="text" id="newUserId" class="form-control" 
+                           placeholder="ivanov_2024" required>
+                    <small style="color: #666; font-size: 0.9rem;">
+                        Используйте одинаковый ID на всех устройствах для синхронизации
+                    </small>
+                </div>
+                <button type="submit" class="btn btn-primary">Сменить пользователя</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            </form>
+        </div>
+    `;
+    
+    showModal('Смена пользователя', modalBody);
+    
+    document.getElementById('changeUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const newUserId = document.getElementById('newUserId').value;
+        
+        if (window.firebaseSync.changeUserId(newUserId)) {
+            closeModal();
+            // Перезагружаем данные для нового пользователя
+            setTimeout(() => {
+                loadData();
+                updateUI();
+                showNotification(`Пользователь изменен на: ${newUserId}`, 'success');
+            }, 1000);
+        }
+    });
 }
 
 // Настройка обработчиков событий
