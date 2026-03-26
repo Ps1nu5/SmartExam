@@ -105,106 +105,53 @@ const MATH_TASKS = {
     }
 };
 
-// Визуальная отладка для мобильных
-function addDebugInfo() {
-    const debugDiv = document.createElement('div');
-    debugDiv.id = 'debugInfo';
-    debugDiv.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        font-size: 12px;
-        z-index: 9999;
-        max-width: 300px;
-        max-height: 200px;
-        overflow-y: auto;
-    `;
-    document.body.appendChild(debugDiv);
-    
-    return debugDiv;
-}
-
-function updateDebugInfo(message) {
-    let debugDiv = document.getElementById('debugInfo');
-    if (!debugDiv) {
-        debugDiv = addDebugInfo();
+// Простая инициализация для мобильных
+function simpleInit() {
+    // Показываем страницу входа если нужно
+    const loginPage = document.getElementById('loginPage');
+    if (loginPage && window.authSystem && window.authSystem.isAuthenticated()) {
+        showDashboard();
+    } else if (loginPage) {
+        loginPage.style.display = 'block';
     }
     
-    const timestamp = new Date().toLocaleTimeString();
-    debugDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-    debugDiv.scrollTop = debugDiv.scrollHeight;
-    
-    // Автоматически удаляем через 10 секунд
-    setTimeout(() => {
-        if (debugDiv.parentNode) {
-            debugDiv.parentNode.removeChild(debugDiv);
-        }
-    }, 10000);
+    // Настраиваем простые обработчики
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn && !loginBtn.onclick) {
+        loginBtn.onclick = function() {
+            showLoginForm();
+        };
+    }
 }
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
-    // Простая проверка что JS работает
-    const loginBtn = document.getElementById('loginBtn');
-    if (loginBtn) {
-        loginBtn.style.background = 'red';
-        setTimeout(() => {
-            loginBtn.style.background = '';
-        }, 1000);
-    }
-    
-    updateDebugInfo('DOM loaded, starting initialization...');
-    
-    // Проверяем загрузку всех необходимых скриптов
-    updateDebugInfo(`Scripts: AuthSystem=${!!window.authSystem}, Firebase=${!!window.firebaseSync}`);
-    
-    // Если authSystem не загружен, ждем немного
-    if (!window.authSystem) {
-        updateDebugInfo('AuthSystem not loaded, waiting...');
-        setTimeout(() => {
-            if (!window.authSystem) {
-                updateDebugInfo('ERROR: AuthSystem failed to load!');
-                return;
-            }
-        }, 2000);
-    }
+    // Запускаем простую инициализацию сразу
+    simpleInit();
     
     // Инициализация Firebase
     if (window.firebaseSync) {
-        updateDebugInfo('Initializing Firebase...');
         window.firebaseSync.init().then(success => {
-            updateDebugInfo(`Firebase init result: ${success}`);
             if (success) {
                 // Инициализация системы аутентификации
                 if (window.authSystem) {
-                    updateDebugInfo('Initializing AuthSystem with Firebase...');
                     window.authSystem.init(window.firebaseSync).then(() => {
-                        updateDebugInfo('AuthSystem initialized with Firebase');
                         checkAuthStatus();
                     }).catch(error => {
-                        updateDebugInfo(`AuthSystem init error: ${error.message}`);
                         checkAuthStatus();
                     });
                 }
             } else {
                 // Инициализация системы аутентификации без Firebase
                 if (window.authSystem) {
-                    updateDebugInfo('Initializing AuthSystem without Firebase...');
                     window.authSystem.init(null).then(() => {
-                        updateDebugInfo('AuthSystem initialized without Firebase');
                         checkAuthStatus();
                     }).catch(error => {
-                        updateDebugInfo(`AuthSystem init error: ${error.message}`);
                         checkAuthStatus();
                     });
                 }
             }
         }).catch(error => {
-            updateDebugInfo(`Firebase init error: ${error.message}`);
             if (window.authSystem) {
                 window.authSystem.init(null).then(() => {
                     checkAuthStatus();
@@ -212,37 +159,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     } else {
-        updateDebugInfo('Firebase not available, initializing without it...');
+        // Инициализация системы аутентификации без Firebase
         if (window.authSystem) {
             window.authSystem.init(null).then(() => {
-                updateDebugInfo('AuthSystem initialized without Firebase');
                 checkAuthStatus();
             }).catch(error => {
-                updateDebugInfo(`AuthSystem init error: ${error.message}`);
                 checkAuthStatus();
             });
-        } else {
-            updateDebugInfo('ERROR: Neither Firebase nor AuthSystem available!');
         }
     }
 });
 
 function checkAuthStatus() {
-    updateDebugInfo(`checkAuthStatus: AuthSystem=${!!window.authSystem}, Authenticated=${window.authSystem ? window.authSystem.isAuthenticated() : 'no authSystem'}`);
-    
     // Проверяем авторизацию сразу без задержки
     if (window.authSystem && window.authSystem.isAuthenticated()) {
-        updateDebugInfo('User is authenticated, showing dashboard');
         showDashboard();
     } else {
-        updateDebugInfo('User not authenticated, showing login page');
         // Показываем страницу входа только если не авторизованы
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.style.display = 'block';
-            updateDebugInfo('Login page shown');
-        } else {
-            updateDebugInfo('ERROR: Login page not found');
         }
         setupAuthListeners();
     }
@@ -279,38 +215,28 @@ function showDashboard() {
 
 // Функции аутентификации
 function setupAuthListeners() {
-    updateDebugInfo('Setting up auth listeners...');
-    
     // Форма входа
     const loginForm = document.getElementById('loginFormElement');
-    updateDebugInfo(`Login form element: ${!!loginForm}`);
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
-            updateDebugInfo('Login form submitted');
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
             try {
-                updateDebugInfo(`Attempting login with email: ${email}`);
                 await window.authSystem.login(email, password);
                 showNotification('Вход выполнен успешно!', 'success');
                 showDashboard();
             } catch (error) {
-                updateDebugInfo(`Login error: ${error.message}`);
                 showNotification(error.message, 'error');
             }
         });
-    } else {
-        updateDebugInfo('ERROR: Login form not found');
     }
     
     // Форма регистрации
     const registerForm = document.getElementById('registerFormElement');
-    updateDebugInfo(`Register form element: ${!!registerForm}`);
     if (registerForm) {
         registerForm.addEventListener('submit', async function(e) {
-            updateDebugInfo('Register form submitted');
             e.preventDefault();
             const name = document.getElementById('registerName').value;
             const email = document.getElementById('registerEmail').value;
@@ -323,32 +249,22 @@ function setupAuthListeners() {
             }
             
             try {
-                updateDebugInfo(`Attempting registration with email: ${email}`);
                 await window.authSystem.register(email, password, name);
                 showNotification('Регистрация выполнена успешно!', 'success');
                 showDashboard();
             } catch (error) {
-                updateDebugInfo(`Registration error: ${error.message}`);
                 showNotification(error.message, 'error');
             }
         });
-    } else {
-        updateDebugInfo('ERROR: Register form not found');
     }
     
     // Кнопка входа в хэдере
     const loginBtn = document.getElementById('loginBtn');
-    updateDebugInfo(`Header login button: ${!!loginBtn}`);
     if (loginBtn) {
         loginBtn.addEventListener('click', function() {
-            updateDebugInfo('Header login button clicked');
             showLoginForm();
         });
-    } else {
-        updateDebugInfo('ERROR: Header login button not found');
     }
-    
-    updateDebugInfo('Auth listeners setup completed');
 }
 
 function showRegisterForm() {
