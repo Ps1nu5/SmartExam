@@ -13,6 +13,84 @@
 <!-- Конфигурация Firebase -->
 <script src="firebase-config.js"></script>
 <script src="firebase-sync.js"></script>
+<script src="auth-system.js"></script>
+<script src="debug-firebase.js"></script>
+
+<!-- Глобальные функции для форм -->
+<script>
+function showRegisterForm() {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    if (loginForm && registerForm) {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    } else {
+        console.error('Формы не найдены');
+    }
+}
+
+function showLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    if (loginForm && registerForm) {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else {
+        console.error('Формы не найдены');
+    }
+}
+
+function logout() {
+    if (window.authSystem) {
+        if (confirm('Вы уверены, что хотите выйти?')) {
+            window.authSystem.logout();
+            showNotification('Вы вышли из системы', 'info');
+            location.reload();
+        }
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        z-index: 10000;
+        transition: all 0.3s ease;
+        transform: translateX(400px);
+    `;
+    
+    if (type === 'success') {
+        notification.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+    } else if (type === 'error') {
+        notification.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+    } else {
+        notification.style.background = 'linear-gradient(135deg, #17a2b8 0%, #138496 100%)';
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    setTimeout(() => {
+        notification.style.transform = 'translateX(400px)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+</script>
 
 </head>
 <body>
@@ -36,8 +114,8 @@
                     <div class="user-menu">
                         <button id="loginBtn" class="btn btn-primary">Войти</button>
                         <div id="userInfo" class="user-info" style="display: none;">
-                            <span id="userName"></span>
-                            <button id="logoutBtn" class="btn btn-secondary">Выход</button>
+                            <span>Добро пожаловать, <strong id="userName"></strong></span>
+                            <button id="logoutBtn" class="btn btn-secondary" onclick="logout()">Выход</button>
                         </div>
                     </div>
                 </div>
@@ -47,89 +125,83 @@
         <!-- Основной контент -->
         <main class="main">
             <div class="container">
-                <!-- Страница входа/регистрации -->
-                <div id="authPage" class="page active">
-                    <div class="auth-container">
-                        <div class="auth-card">
-                            <h2>Вход в систему</h2>
-                            <form id="loginForm">
-                                <div class="form-group">
-                                    <label for="email">Email</label>
-                                    <input type="email" id="email" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="password">Пароль</label>
-                                    <input type="password" id="password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-full">Войти</button>
-                            </form>
-                            <p class="auth-switch">
-                                Нет аккаунта? <a href="#" id="showRegister">Зарегистрироваться</a>
-                            </p>
-                        </div>
-
-                        <div class="auth-card" id="registerCard" style="display: none;">
-                            <h2>Регистрация</h2>
-                            <form id="registerForm">
-                                <div class="form-group">
-                                    <label for="regName">Имя</label>
-                                    <input type="text" id="regName" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="regEmail">Email</label>
-                                    <input type="email" id="regEmail" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="regPassword">Пароль</label>
-                                    <input type="password" id="regPassword" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="regConfirmPassword">Подтвердите пароль</label>
-                                    <input type="password" id="regConfirmPassword" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-full">Зарегистрироваться</button>
-                            </form>
-                            <p class="auth-switch">
-                                Уже есть аккаунт? <a href="#" id="showLogin">Войти</a>
-                            </p>
+                <!-- Страница входа -->
+                <div id="loginPage" class="page active">
+                    <div class="login-container">
+                        <div class="login-card">
+                            <div class="login-header">
+                                <h1>SmartExam</h1>
+                                <p>Анализ результатов экзаменов</p>
+                            </div>
+                            
+                            <!-- Форма входа -->
+                            <div id="loginForm" class="auth-form">
+                                <h2>Вход в систему</h2>
+                                <form id="loginFormElement">
+                                    <div class="form-group">
+                                        <label for="loginEmail">Email</label>
+                                        <input type="email" id="loginEmail" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="loginPassword">Пароль</label>
+                                        <input type="password" id="loginPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Войти</button>
+                                </form>
+                                <p class="auth-switch">
+                                    Нет аккаунта? <a href="#" onclick="showRegisterForm()">Зарегистрироваться</a>
+                                </p>
+                            </div>
+                            
+                            <!-- Форма регистрации -->
+                            <div id="registerForm" class="auth-form" style="display: none;">
+                                <h2>Регистрация</h2>
+                                <form id="registerFormElement">
+                                    <div class="form-group">
+                                        <label for="registerName">Имя</label>
+                                        <input type="text" id="registerName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="registerEmail">Email</label>
+                                        <input type="email" id="registerEmail" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="registerPassword">Пароль</label>
+                                        <input type="password" id="registerPassword" required minlength="6">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="registerConfirmPassword">Подтвердите пароль</label>
+                                        <input type="password" id="registerConfirmPassword" required minlength="6">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                                </form>
+                                <p class="auth-switch">
+                                    Уже есть аккаунт? <a href="#" onclick="showLoginForm()">Войти</a>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Панель управления -->
-                <div id="dashboardPage" class="page">
-                    <div class="dashboard-header">
-                        <h2>Панель управления</h2>
-                        <p>Добро пожаловать в SmartExam!</p>
-                    </div>
-                    <div class="dashboard-stats">
-                        <div class="stat-card">
-                            <div class="stat-number" id="totalClasses">0</div>
-                            <div class="stat-label">Классов</div>
+                <div id="dashboardPage" class="page" style="display: none;">
+                    <!-- Главная страница -->
+                    <div id="dashboardPageContent" class="page active">
+                        <div class="dashboard-stats">
+                            <div class="stat-card">
+                                <div class="stat-number" id="totalClasses">0</div>
+                                <div class="stat-label">Классов</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="totalStudents">0</div>
+                                <div class="stat-label">Учеников</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="totalExams">0</div>
+                                <div class="stat-label">Экзаменов</div>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="totalStudents">0</div>
-                            <div class="stat-label">Учеников</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="totalExams">0</div>
-                            <div class="stat-label">Экзаменов</div>
-                        </div>
                     </div>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary" onclick="showSyncStatus()">
-                            🔄 Статус синхронизации
-                        </button>
-                        <button class="btn btn-primary" onclick="forceSync()">
-                            ☁️ Синхронизировать
-                        </button>
-                    </div>
-                    <div class="dashboard-actions">
-                        <button class="btn btn-primary" onclick="showPage('classes')">Управление классами</button>
-                        <button class="btn btn-secondary" onclick="showPage('exams')">Добавить экзамен</button>
-                        <button class="btn btn-info" onclick="showPage('analytics')">Посмотреть аналитику</button>
-                    </div>
-                </div>
 
                 <!-- Управление классами -->
                 <div id="classesPage" class="page">

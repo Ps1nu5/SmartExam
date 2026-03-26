@@ -22,8 +22,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if true; // Разрешаем доступ без аутентификации
+    // Разрешаем чтение и запись всех документов
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

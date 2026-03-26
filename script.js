@@ -107,22 +107,242 @@ const MATH_TASKS = {
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
-    loadData();
-    setupEventListeners();
-    updateUI();
-    
     // Инициализация Firebase
     if (window.firebaseSync) {
         window.firebaseSync.init().then(success => {
             if (success) {
-                console.log('Firebase синхронизация активна');
-                updateSyncStatus();
+                // Инициализация системы аутентификации
+                if (window.authSystem) {
+                    window.authSystem.init(window.firebaseSync);
+                }
             } else {
-                console.log('Работаем в офлайн-режиме');
+                // Инициализация системы аутентификации без Firebase
+                if (window.authSystem) {
+                    window.authSystem.init(null);
+                }
             }
+            
+            // Проверяем авторизацию
+            checkAuthStatus();
         });
+    } else {
+        // Инициализация системы аутентификации без Firebase
+        if (window.authSystem) {
+            window.authSystem.init(null);
+        }
+        
+        // Проверяем авторизацию
+        checkAuthStatus();
     }
 });
+
+function checkAuthStatus() {
+    // console.log - отключен для продакшена('Проверка статуса авторизации...');
+    
+    // Ждем загрузки DOM
+    setTimeout(() => {
+        // Проверяем авторизацию
+        if (window.authSystem && window.authSystem.isAuthenticated()) {
+            // console.log - отключен для продакшена('Пользователь авторизован, показываем дашборд...');
+            showDashboard();
+        } else {
+            // console.log - отключен для продакшена('Пользователь не авторизован, настраиваем формы...');
+            setupAuthListeners();
+        }
+    }, 100);
+}
+
+function showDashboard() {
+    // console.log - отключен для продакшена('Показ дашборда...');
+    
+    // Скрываем страницу входа
+    const loginPage = document.getElementById('loginPage');
+    const dashboardPage = document.getElementById('dashboardPage');
+    
+    if (loginPage) loginPage.style.display = 'none';
+    if (dashboardPage) dashboardPage.style.display = 'block';
+    
+    // Показываем главную страницу по умолчанию
+    showPage('dashboard');
+    
+    // Загружаем данные пользователя с принудительным обновлением из Firebase
+    setTimeout(async () => {
+        if (window.authSystem && window.authSystem.isAuthenticated()) {
+            // console.log - отключен для продакшена('Принудительная загрузка данных из Firebase...');
+            await window.authSystem.loadUserData();
+        }
+        loadUserData();
+        
+        // Настраиваем слушатели для дашборда
+        setTimeout(() => {
+            setupEventListeners();
+            updateUI();
+        }, 100);
+    }, 100);
+}
+
+// Функции аутентификации
+function setupAuthListeners() {
+    // console.log - отключен для продакшена('Настройка слушателей аутентификации...');
+    
+    // Форма входа
+    const loginForm = document.getElementById('loginFormElement');
+    // console.log - отключен для продакшена('Форма входа:', loginForm);
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                await window.authSystem.login(email, password);
+                showNotification('Вход выполнен успешно!', 'success');
+                showDashboard();
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        });
+    } else {
+        console.error('Форма входа не найдена');
+    }
+    
+    // Форма регистрации
+    const registerForm = document.getElementById('registerFormElement');
+    // console.log - отключен для продакшена('Форма регистрации:', registerForm);
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showNotification('Пароли не совпадают', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showNotification('Пароль должен содержать минимум 6 символов', 'error');
+                return;
+            }
+            
+            try {
+                await window.authSystem.register(email, password, name);
+                showNotification('Регистрация выполнена успешно!', 'success');
+                showDashboard();
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        });
+    } else {
+        console.error('Форма регистрации не найдена');
+    }
+}
+
+function showRegisterForm() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'block';
+}
+
+function showLoginForm() {
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('registerForm').style.display = 'none';
+}
+
+function logout() {
+    // console.log - отключен для продакшена('Выход из системы...');
+    if (confirm('Вы уверены, что хотите выйти?')) {
+        // console.log - отключен для продакшена('Подтверждение получено');
+        
+        if (window.authSystem) {
+            // console.log - отключен для продакшена('Выход из authSystem...');
+            window.authSystem.logout();
+        }
+        
+        // Показываем страницу входа
+        const loginPage = document.getElementById('loginPage');
+        const dashboardPage = document.getElementById('dashboardPage');
+        
+        // console.log - отключен для продакшена('Страницы:', { loginPage, dashboardPage });
+        
+        if (loginPage) {
+            loginPage.style.display = 'block';
+            // console.log - отключен для продакшена('Страница входа показана');
+        } else {
+            console.error('Страница входа не найдена');
+        }
+        
+        if (dashboardPage) {
+            dashboardPage.style.display = 'none';
+            // console.log - отключен для продакшена('Страница дашборда скрыта');
+        } else {
+            console.error('Страница дашборда не найдена');
+        }
+        
+        showNotification('Вы вышли из системы', 'info');
+        
+        // Настраиваем слушатели для форм входа
+        setTimeout(() => {
+            // console.log - отключен для продакшена('Настройка слушателей для форм входа...');
+            setupAuthListeners();
+        }, 100);
+    } else {
+        // console.log - отключен для продакшена('Выход отменен');
+    }
+}
+
+// Делаем функции глобальными для вызова из HTML
+window.logout = logout;
+window.showRegisterForm = showRegisterForm;
+window.showLoginForm = showLoginForm;
+window.showPage = showPage;
+window.showAddClassModal = showAddClassModal;
+window.showAddExamModal = showAddExamModal;
+window.deleteClass = deleteClass;
+window.deleteExam = deleteExam;
+window.showExamResults = showExamResults;
+window.showExamAnalytics = showExamAnalytics;
+window.toggleTaskResult = toggleTaskResult;
+window.fillAllPassed = fillAllPassed;
+window.fillAllFailed = fillAllFailed;
+window.fillRandom = fillRandom;
+window.showStatistics = showStatistics;
+window.saveExamResults = saveExamResults;
+
+function loadUserData() {
+    // Загружаем данные пользователя
+    const data = localStorage.getItem('smartExamData');
+    if (data) {
+        const parsedData = JSON.parse(data);
+        window.users = parsedData.users || [];
+        window.classes = parsedData.classes || [];
+        window.exams = parsedData.exams || [];
+        
+        // Собираем всех студентов из классов
+        window.students = [];
+        if (window.classes) {
+            window.classes.forEach(cls => {
+                if (cls.students) {
+                    window.students.push(...cls.students);
+                }
+            });
+        }
+        
+        // Данные загружены
+    } else {
+        window.users = [];
+        window.classes = [];
+        window.exams = [];
+        window.students = [];
+        // Данные инициализированы как пустые
+    }
+}
+
+async function loadData() {
+    // Просто вызываем loadUserData для совместимости
+    loadUserData();
+}
 
 // Функции управления синхронизацией
 function showSyncStatus() {
@@ -251,166 +471,109 @@ async function loadFromFirebase() {
 }
 
 async function clearFirebaseData() {
-    if (!window.firebaseSync) {
-        showModal('Ошибка', 'Firebase не инициализирован');
-        return;
-    }
-
-    if (!confirm('Вы уверены, что хотите удалить все данные из Firebase?')) {
-        return;
-    }
-
-    await window.firebaseSync.clearFirebaseData();
-    showModal('✅ Готово', `
-        <div style="padding: 1rem; text-align: center;">
-            <div style="color: #28a745; font-size: 1.2rem; margin-bottom: 1rem;">🗑️</div>
-            <div>Данные в Firebase успешно удалены</div>
-        </div>
-    `);
-}
-
-function changeUser() {
-    if (!window.firebaseSync) {
-        showModal('Ошибка', 'Firebase не инициализирован');
-        return;
-    }
-
-    const currentUserName = window.firebaseSync.getCurrentUserName();
-    const modalBody = `
-        <div style="padding: 1rem;">
-            <p><strong>Текущий пользователь:</strong> ${currentUserName}</p>
-            <p style="margin-bottom: 1rem;">Введите новый ID пользователя для синхронизации данных:</p>
-            <form id="changeUserForm">
-                <div class="form-group">
-                    <label for="newUserId">ID пользователя (например: ivanov_2024)</label>
-                    <input type="text" id="newUserId" class="form-control" 
-                           placeholder="ivanov_2024" required>
-                    <small style="color: #666; font-size: 0.9rem;">
-                        Используйте одинаковый ID на всех устройствах для синхронизации
-                    </small>
-                </div>
-                <button type="submit" class="btn btn-primary">Сменить пользователя</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
-            </form>
-        </div>
-    `;
-    
-    showModal('Смена пользователя', modalBody);
-    
-    document.getElementById('changeUserForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const newUserId = document.getElementById('newUserId').value;
-        
-        if (window.firebaseSync.changeUserId(newUserId)) {
-            closeModal();
-            // Перезагружаем данные для нового пользователя
-            setTimeout(() => {
-                loadData();
-                updateUI();
-                showNotification(`Пользователь изменен на: ${newUserId}`, 'success');
-            }, 1000);
-        }
-    });
+    // Функция отключена - данные удаляются только при выходе из аккаунта
+    // console.log - отключен для продакшена('Очистка данных отключена');
 }
 
 // Настройка обработчиков событий
 function setupEventListeners() {
+    // console.log - отключен для продакшена('Настройка обработчиков событий для дашборда...');
+    
     // Навигация
-    document.querySelectorAll('.nav-link').forEach(link => {
+    const navLinks = document.querySelectorAll('.nav-link');
+    // console.log - отключен для продакшена('Найдено навигационных ссылок:', navLinks.length);
+    navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const page = this.dataset.page;
+            // console.log - отключен для продакшена('Переход на страницу:', page);
             showPage(page);
         });
     });
 
-    // Аутентификация
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    document.getElementById('registerForm').addEventListener('submit', handleRegister);
-    document.getElementById('showRegister').addEventListener('click', showRegisterForm);
-    document.getElementById('showLogin').addEventListener('click', showLoginForm);
-    document.getElementById('loginBtn').addEventListener('click', showLoginForm);
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+    // Кнопки управления
+    const addClassBtn = document.getElementById('addClassBtn');
+    // console.log - отключен для продакшена('Кнопка добавления класса:', addClassBtn);
+    if (addClassBtn) {
+        addClassBtn.addEventListener('click', showAddClassModal);
+    } else {
+        console.error('Кнопка добавления класса не найдена');
+    }
 
-    // Модальные окна
-    document.getElementById('modalClose').addEventListener('click', closeModal);
-    document.getElementById('modalOverlay').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
-
-    // Классы
-    document.getElementById('addClassBtn').addEventListener('click', showAddClassModal);
-
-    // Экзамены
-    document.getElementById('addExamBtn').addEventListener('click', showAddExamModal);
+    const addExamBtn = document.getElementById('addExamBtn');
+    // console.log - отключен для продакшена('Кнопка добавления экзамена:', addExamBtn);
+    if (addExamBtn) {
+        addExamBtn.addEventListener('click', showAddExamModal);
+    } else {
+        console.error('Кнопка добавления экзамена не найдена');
+    }
 
     // Аналитика
-    document.getElementById('analyticsClassSelect').addEventListener('change', updateAnalyticsExamSelect);
-    document.getElementById('analyticsExamSelect').addEventListener('change', updateAnalytics);
+    const analyticsClassSelect = document.getElementById('analyticsClassSelect');
+    // console.log - отключен для продакшена('Селект класса в аналитике:', analyticsClassSelect);
+    if (analyticsClassSelect) {
+        analyticsClassSelect.addEventListener('change', updateAnalyticsExamSelect);
+    }
+
+    const analyticsExamSelect = document.getElementById('analyticsExamSelect');
+    // console.log - отключен для продакшена('Селект экзамена в аналитике:', analyticsExamSelect);
+    if (analyticsExamSelect) {
+        analyticsExamSelect.addEventListener('change', updateAnalytics);
+    }
+    
+    // console.log - отключен для продакшена('Настройка обработчиков событий завершена');
 }
 
-// Функции сохранения и загрузки данных с синхронизацией
+// Функции сохранения и загрузки данных с автоматической синхронизацией
 async function saveData() {
     try {
         // Сохраняем в localStorage
-        localStorage.setItem('smartExamData', JSON.stringify({
+        const dataToSave = {
             users: users,
             classes: classes,
             exams: exams
-        }));
+        };
+        localStorage.setItem('smartExamData', JSON.stringify(dataToSave));
         
-        // Синхронизируем с Firebase
-        if (window.firebaseSync) {
-            await window.firebaseSync.syncToFirebase();
+        // Автоматическая синхронизация с Firebase (без уведомлений)
+        if (window.authSystem && window.authSystem.isAuthenticated()) {
+            await window.authSystem.saveUserData();
         }
+        
+        // console.log - отключен для продакшена('Данные сохранены');
     } catch (error) {
         console.error('Ошибка сохранения данных:', error);
     }
 }
 
-async function loadData() {
-    try {
-        // Сначала пробуем загрузить из Firebase
-        if (window.firebaseSync && navigator.onLine) {
-            const firebaseData = await window.firebaseSync.loadFromFirebase();
-            if (firebaseData) {
-                const { users, classes, exams } = firebaseData;
-                window.users = users || [];
-                window.classes = classes || [];
-                window.exams = exams || [];
-                return;
-            }
-        }
-        
-        // Загружаем из localStorage
-        const data = localStorage.getItem('smartExamData');
-        if (data) {
-            const parsedData = JSON.parse(data);
-            window.users = parsedData.users || [];
-            window.classes = parsedData.classes || [];
-            window.exams = parsedData.exams || [];
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-        window.users = [];
-        window.classes = [];
-        window.exams = [];
-    }
-}
-
 // Обновление интерфейса
 function updateUI() {
-    if (currentUser) {
-        document.getElementById('loginBtn').style.display = 'none';
-        document.getElementById('userInfo').style.display = 'flex';
-        document.getElementById('userName').textContent = currentUser.name;
-        showPage('dashboard');
+    if (window.authSystem && window.authSystem.isAuthenticated()) {
+        const user = window.authSystem.getCurrentUser();
+        if (user) {
+            // Скрываем кнопку входа в хэдере
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) loginBtn.style.display = 'none';
+            
+            // Показываем userInfo в хэдере
+            const userInfo = document.getElementById('userInfo');
+            if (userInfo) userInfo.style.display = 'flex';
+            
+            // Устанавливаем имя пользователя в хэдере
+            const userNameElement = document.getElementById('userName');
+            if (userNameElement) userNameElement.textContent = user.name;
+        }
     } else {
-        document.getElementById('loginBtn').style.display = 'block';
-        document.getElementById('userInfo').style.display = 'none';
-        showPage('auth');
+        // Показываем кнопку входа
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) loginBtn.style.display = 'block';
+        
+        // Скрываем userInfo
+        const userInfo = document.getElementById('userInfo');
+        if (userInfo) userInfo.style.display = 'none';
     }
 
+    // Обновляем дашборд
     updateDashboard();
     updateClassesList();
     updateExamsList();
@@ -419,97 +582,59 @@ function updateUI() {
 
 // Показать страницу
 function showPage(pageName) {
-    document.querySelectorAll('.page').forEach(page => {
+    // console.log - отключен для продакшена('Показ страницы:', pageName);
+    
+    // Скрываем все страницы внутри dashboardPage
+    const dashboardPages = document.querySelectorAll('#dashboardPage .page');
+    // console.log - отключен для продакшена('Найдено страниц дашборда:', dashboardPages.length);
+    dashboardPages.forEach(page => {
         page.classList.remove('active');
+        // console.log - отключен для продакшена('Скрыта страница:', page.id);
     });
     
-    document.getElementById(pageName + 'Page').classList.add('active');
+    // Показываем нужную страницу
+    if (pageName === 'dashboard') {
+        // Для главной страницы используем специальный ID
+        const dashboardContent = document.getElementById('dashboardPageContent');
+        if (dashboardContent) {
+            dashboardContent.classList.add('active');
+            // console.log - отключен для продакшена('Показана главная страница');
+        } else {
+            console.error('Главная страница не найдена');
+        }
+    } else {
+        const targetPage = document.getElementById(pageName + 'Page');
+        if (targetPage) {
+            targetPage.classList.add('active');
+            // console.log - отключен для продакшена('Показана страница:', targetPage.id);
+        } else {
+            console.error('Страница не найдена:', pageName + 'Page');
+        }
+    }
     
-    document.querySelectorAll('.nav-link').forEach(link => {
+    // Обновляем навигацию
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
         link.classList.remove('active');
         if (link.dataset.page === pageName) {
             link.classList.add('active');
         }
     });
-}
-
-// Аутентификация
-function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-
-    // В реальном приложении здесь будет проверка на сервере
-    // Для демонстрации используем простую логику
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(u => u.email === email && u.password === password);
-
-    if (user) {
-        currentUser = user;
-        saveData();
-        updateUI();
-        showNotification('Вы успешно вошли в систему!', 'success');
-    } else {
-        showNotification('Неверный email или пароль', 'error');
-    }
-}
-
-function handleRegister(e) {
-    e.preventDefault();
-    const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
-    const confirmPassword = document.getElementById('regConfirmPassword').value;
-
-    if (password !== confirmPassword) {
-        showNotification('Пароли не совпадают', 'error');
-        return;
-    }
-
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
     
-    if (users.find(u => u.email === email)) {
-        showNotification('Пользователь с таким email уже существует', 'error');
-        return;
+    // Проверяем что главная страница видна
+    if (pageName === 'dashboard') {
+        const dashboardContent = document.getElementById('dashboardPageContent');
+        if (dashboardContent) {
+            // console.log - отключен для продакшена('Главная страница активна?', dashboardContent.classList.contains('active'));
+            // console.log - отключен для продакшена('Стиль главной страницы:', window.getComputedStyle(dashboardContent).display);
+        }
     }
-
-    const newUser = {
-        id: Date.now().toString(),
-        name,
-        email,
-        password
-    };
-
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-
-    currentUser = newUser;
-    saveData();
-    updateUI();
-    showNotification('Регистрация прошла успешно!', 'success');
-}
-
-function handleLogout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    updateUI();
-    showNotification('Вы вышли из системы', 'info');
-}
-
-function showLoginForm(e) {
-    if (e) e.preventDefault();
-    document.querySelector('.auth-card').style.display = 'block';
-    document.getElementById('registerCard').style.display = 'none';
-}
-
-function showRegisterForm(e) {
-    if (e) e.preventDefault();
-    document.querySelector('.auth-card').style.display = 'none';
-    document.getElementById('registerCard').style.display = 'block';
 }
 
 // Управление классами
 function showAddClassModal() {
+    // console.log - отключен для продакшена('Показ модального окна добавления класса...');
+    
     const modalBody = `
         <form id="addClassForm">
             <div class="form-group">
@@ -524,16 +649,30 @@ function showAddClassModal() {
         </form>
     `;
 
+    // console.log - отключен для продакшена('Вызов showModal...');
     showModal('Добавить класс', modalBody);
     
-    document.getElementById('addClassForm').addEventListener('submit', handleAddClass);
+    // Добавляем обработчик после создания модального окна
+    setTimeout(() => {
+        // console.log - отключен для продакшена('Настройка обработчика формы добавления класса...');
+        const form = document.getElementById('addClassForm');
+        if (form) {
+            // console.log - отключен для продакшена('Форма найдена, добавляем обработчик...');
+            form.addEventListener('submit', handleAddClass);
+        } else {
+            console.error('Форма добавления класса не найдена');
+        }
+    }, 100);
 }
 
 function handleAddClass(e) {
+    // console.log - отключен для продакшена('Обработка добавления класса...');
     e.preventDefault();
     const className = document.getElementById('className').value;
     const studentsText = document.getElementById('classStudents').value;
     const studentsList = studentsText.split('\n').filter(s => s.trim()).map(s => s.trim());
+
+    // console.log - отключен для продакшена('Данные класса:', { className, studentsCount: studentsList.length });
 
     const newClass = {
         id: Date.now().toString(),
@@ -544,32 +683,38 @@ function handleAddClass(e) {
         }))
     };
 
-    classes.push(newClass);
-    students.push(...newClass.students);
+    window.classes.push(newClass);
+    if (window.students) {
+        window.students.push(...newClass.students);
+    }
+    
+    // console.log - отключен для продакшена('Класс добавлен в window.classes. Всего классов:', window.classes.length);
+    // console.log - отключен для продакшена('Добавленный класс:', newClass);
+    
     saveData();
-    updateUI();
     closeModal();
     showNotification('Класс успешно добавлен!', 'success');
+    updateUI();
 }
 
 function updateClassesList() {
     const container = document.getElementById('classesList');
     
-    if (classes.length === 0) {
+    if (window.classes.length === 0) {
         container.innerHTML = '<p>У вас пока нет классов. Создайте первый класс!</p>';
         return;
     }
 
-    container.innerHTML = classes.map(cls => `
+    container.innerHTML = window.classes.map(cls => `
         <div class="class-card">
             <div class="class-info">
                 <div class="class-name">${cls.name}</div>
                 <div class="class-students">${cls.students.length} учеников</div>
             </div>
             <div class="card-actions">
+                <button class="btn btn-primary" onclick="showClassDetails('${cls.id}')">Подробнее</button>
                 <button class="btn btn-secondary" onclick="editClass('${cls.id}')">Редактировать</button>
-                <button class="btn btn-info" onclick="viewClass('${cls.id}')">Просмотр</button>
-                <button class="btn btn-secondary" onclick="deleteClass('${cls.id}')">Удалить</button>
+                <button class="btn btn-danger" onclick="deleteClass('${cls.id}')">Удалить</button>
             </div>
         </div>
     `).join('');
@@ -577,7 +722,7 @@ function updateClassesList() {
 
 function deleteClass(classId) {
     if (confirm('Вы уверены, что хотите удалить этот класс?')) {
-        classes = classes.filter(c => c.id !== classId);
+        window.classes = window.classes.filter(c => c.id !== classId);
         saveData();
         updateUI();
         showNotification('Класс удален', 'info');
@@ -585,22 +730,27 @@ function deleteClass(classId) {
 }
 
 function viewClass(classId) {
-    const cls = classes.find(c => c.id === classId);
+    const cls = window.classes.find(c => c.id === classId);
     if (!cls) return;
 
     const modalBody = `
-        <h3>Класс: ${cls.name}</h3>
-        <h4>Ученики:</h4>
-        <ul>
-            ${cls.students.map(student => `<li>${student.name}</li>`).join('')}
-        </ul>
+        <div style="padding: 1rem;">
+            <h3>${cls.name}</h3>
+            <p><strong>Количество учеников:</strong> ${cls.students.length}</p>
+            <div>
+                <strong>Список учеников:</strong>
+                <ul>
+                    ${cls.students.map(student => `<li>${student.name}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
     `;
 
     showModal('Информация о классе', modalBody);
 }
 
 function editClass(classId) {
-    const cls = classes.find(c => c.id === classId);
+    const cls = window.classes.find(c => c.id === classId);
     if (!cls) return;
 
     const modalBody = `
@@ -640,7 +790,7 @@ function editClass(classId) {
 
 // Управление экзаменами
 function showAddExamModal() {
-    if (classes.length === 0) {
+    if (!window.classes || window.classes.length === 0) {
         showNotification('Сначала создайте класс!', 'error');
         return;
     }
@@ -651,7 +801,7 @@ function showAddExamModal() {
                 <label for="examClass">Класс</label>
                 <select id="examClass" class="form-control" required>
                     <option value="">Выберите класс</option>
-                    ${classes.map(cls => `<option value="${cls.id}">${cls.name}</option>`).join('')}
+                    ${window.classes.map(cls => `<option value="${cls.id}">${cls.name}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">
@@ -681,7 +831,7 @@ function handleAddExam(e) {
     const examType = document.getElementById('examType').value;
     const examDate = document.getElementById('examDate').value;
 
-    const cls = classes.find(c => c.id === classId);
+    const cls = window.classes.find(c => c.id === classId);
     const examConfig = MATH_TASKS[examType];
 
     const newExam = {
@@ -702,7 +852,7 @@ function handleAddExam(e) {
         }))
     };
 
-    exams.push(newExam);
+    window.exams.push(newExam);
     saveData();
     updateUI();
     closeModal();
@@ -715,12 +865,12 @@ function handleAddExam(e) {
 function updateExamsList() {
     const container = document.getElementById('examsList');
     
-    if (exams.length === 0) {
+    if (!window.exams || window.exams.length === 0) {
         container.innerHTML = '<p>У вас пока нет экзаменов. Создайте первый экзамен!</p>';
         return;
     }
 
-    container.innerHTML = exams.map(exam => `
+    container.innerHTML = window.exams.map(exam => `
         <div class="exam-card">
             <div class="exam-info">
                 <div class="exam-name">${exam.className} - ${exam.typeName}</div>
@@ -736,7 +886,7 @@ function updateExamsList() {
 }
 
 function showExamResults(examId) {
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     if (!exam) return;
 
     const modalBody = `
@@ -789,7 +939,7 @@ function showExamResults(examId) {
 }
 
 function toggleTaskResult(examId, studentId, taskIndex) {
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     const result = exam.results.find(r => r.studentId === studentId);
     result.taskResults[taskIndex].passed = !result.taskResults[taskIndex].passed;
     
@@ -812,7 +962,7 @@ function saveExamResults(examId) {
 // Вспомогательные функции для ввода данных
 function fillAllPassed() {
     const examId = getCurrentExamId();
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     exam.results.forEach(result => {
         result.taskResults.forEach(taskResult => {
             taskResult.passed = true;
@@ -824,7 +974,7 @@ function fillAllPassed() {
 
 function fillAllFailed() {
     const examId = getCurrentExamId();
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     exam.results.forEach(result => {
         result.taskResults.forEach(taskResult => {
             taskResult.passed = false;
@@ -836,7 +986,7 @@ function fillAllFailed() {
 
 function fillRandom() {
     const examId = getCurrentExamId();
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     exam.results.forEach(result => {
         result.taskResults.forEach(taskResult => {
             taskResult.passed = Math.random() > 0.3; // 70% вероятность сдачи
@@ -848,7 +998,7 @@ function fillRandom() {
 
 function showStatistics() {
     const examId = getCurrentExamId();
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     const stats = calculateExamStats(exam);
     
     const statsHtml = `
@@ -873,7 +1023,7 @@ function getCurrentExamId() {
 }
 
 function refreshExamTable(examId) {
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     const tbody = document.querySelector('.exam-table tbody');
     
     tbody.innerHTML = exam.results.map(result => `
@@ -893,7 +1043,7 @@ function refreshExamTable(examId) {
 }
 
 function updateExamStatistics(examId) {
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     const stats = calculateExamStats(exam);
     const statsDiv = document.getElementById('examStats');
     
@@ -910,9 +1060,10 @@ function updateExamStatistics(examId) {
 
 function deleteExam(examId) {
     if (confirm('Вы уверены, что хотите удалить этот экзамен?')) {
-        exams = exams.filter(e => e.id !== examId);
+        window.exams = window.exams.filter(e => e.id !== examId);
         saveData();
         updateUI();
+        closeModal();
         showNotification('Экзамен удален', 'info');
     }
 }
@@ -923,7 +1074,7 @@ function updateAnalyticsSelects() {
     const examSelect = document.getElementById('analyticsExamSelect');
 
     classSelect.innerHTML = '<option value="">Выберите класс</option>' +
-        classes.map(cls => `<option value="${cls.id}">${cls.name}</option>`).join('');
+        (window.classes || []).map(cls => `<option value="${cls.id}">${cls.name}</option>`).join('');
 }
 
 function updateAnalyticsExamSelect() {
@@ -935,7 +1086,7 @@ function updateAnalyticsExamSelect() {
         return;
     }
 
-    const classExams = exams.filter(e => e.classId === classId);
+    const classExams = (window.exams || []).filter(exam => exam.classId === classId);
     examSelect.innerHTML = '<option value="">Выберите экзамен</option>' +
         classExams.map(exam => `<option value="${exam.id}">${exam.typeName} - ${exam.date}</option>`).join('');
 }
@@ -944,7 +1095,7 @@ function updateAnalytics() {
     const examId = document.getElementById('analyticsExamSelect').value;
     if (!examId) return;
 
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     if (!exam) return;
 
     const analyticsContent = document.getElementById('analyticsContent');
@@ -1024,7 +1175,7 @@ function updateAnalytics() {
 
 // Функции для расчета баллов
 function calculatePrimaryScore(result) {
-    const exam = exams.find(e => e.results.includes(result));
+    const exam = (window.exams || []).find(e => e.results.includes(result));
     if (!exam) return 0;
     
     let totalScore = 0;
@@ -1471,7 +1622,7 @@ function generateTopicsAnalysis(exam) {
 }
 
 function showExamAnalytics(examId) {
-    const exam = exams.find(e => e.id === examId);
+    const exam = (window.exams || []).find(e => e.id === examId);
     if (!exam) return;
 
     // Установить выбранные значения в селектах
@@ -1486,9 +1637,35 @@ function showExamAnalytics(examId) {
 
 // Обновление панели управления
 function updateDashboard() {
-    document.getElementById('totalClasses').textContent = classes.length;
-    document.getElementById('totalStudents').textContent = students.length;
-    document.getElementById('totalExams').textContent = exams.length;
+    // console.log - отключен для продакшена('Обновление дашборда...');
+    
+    const totalClassesEl = document.getElementById('totalClasses');
+    const totalStudentsEl = document.getElementById('totalStudents');
+    const totalExamsEl = document.getElementById('totalExams');
+    
+    // Элементы статистики проверены
+    
+    // Данные для статистики получены
+    
+    if (totalClassesEl) {
+        totalClassesEl.textContent = window.classes ? window.classes.length : 0;
+    } else {
+        console.error('Элемент totalClasses не найден');
+    }
+    
+    if (totalStudentsEl) {
+        totalStudentsEl.textContent = window.students ? window.students.length : 0;
+    } else {
+        console.error('Элемент totalStudents не найден');
+    }
+    
+    if (totalExamsEl) {
+        totalExamsEl.textContent = window.exams ? window.exams.length : 0;
+    } else {
+        console.error('Элемент totalExams не найден');
+    }
+    
+    // console.log - отключен для продакшена('Статистика обновлена');
 }
 
 // Модальные окна
@@ -1501,6 +1678,24 @@ function showModal(title, body) {
 function closeModal() {
     document.getElementById('modalOverlay').classList.remove('active');
 }
+
+// Добавляем обработчик на крестик
+document.addEventListener('DOMContentLoaded', function() {
+    const modalClose = document.getElementById('modalClose');
+    if (modalClose) {
+        modalClose.addEventListener('click', closeModal);
+    }
+    
+    // Закрытие по клику на оверлей
+    const modalOverlay = document.getElementById('modalOverlay');
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', function(e) {
+            if (e.target === modalOverlay) {
+                closeModal();
+            }
+        });
+    }
+});
 
 // Уведомления
 function showNotification(message, type = 'info') {

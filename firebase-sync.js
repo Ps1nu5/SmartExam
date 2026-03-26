@@ -76,12 +76,8 @@ class FirebaseSync {
             this.lastSyncTime = new Date();
             console.log('Данные синхронизированы с Firebase');
             
-            // Показываем уведомление
-            this.showSyncNotification('Данные синхронизированы');
-            
         } catch (error) {
             console.error('Ошибка синхронизации с Firebase:', error);
-            this.showSyncNotification('Ошибка синхронизации', 'error');
         } finally {
             this.syncInProgress = false;
         }
@@ -101,7 +97,6 @@ class FirebaseSync {
                     // Сохраняем в localStorage
                     localStorage.setItem('smartExamData', JSON.stringify(data));
                     console.log('Данные загружены из Firebase');
-                    this.showSyncNotification('Данные загружены из облака');
                     return data;
                 }
             }
